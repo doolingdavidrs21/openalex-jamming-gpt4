@@ -43,7 +43,7 @@ new intelligence analyst. Highlight typical applications. Highlight any dual use
 Government.
 
 What is a good summary of the scientific topic related to {article_phrases} and {article_title}?
-Provide the summary in about 100 words. 
+Provide the summary in about 80 words. 
 Please end with a complete sentence.
 """
 
@@ -74,7 +74,7 @@ new intelligence analyst. Highlight typical applications. Highlight any dual use
 Government.
 
 What is a good summary of the scientific topic related to {topic_phrases}?
-Provide the summary in about 100 words. 
+Provide the summary in about 80 words. 
 Please end with a complete sentence.
 """
 
