@@ -30,53 +30,66 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 # https://platform.openai.com/docs/models/gpt-3-5
 
 llm = ChatOpenAI(model_name = 'gpt-4', # 'gpt-3.5-turbo', # 'text-davinci-003' , 'gpt-3.5-turbo'
-             temperature=0.6,
+             temperature=0.3,
              max_tokens=600)
 
-
 article_template = """
-I want you to act as a naming consultant for scientific topics based on keyphrases and an article title.
+I want you to act as a scientific consultant to help intelligence 
+analysts understand the if a given paper poses any kind of concern to 
+United States security. 
+Act like a Systems Engineering and Technical Assistance (SETA) consultant. 
+The summary from you is based on article title, article abstract, the list
+of authors, and the list of affiliations. 
 
 Return a brief but detailed description of the scientific topic and applications related to
-the scientific field desribed by the keyphrase and title. The description should be meaningful to an
+the scientific field desribed by the title, abstract, list of authors, and the list
+of author affiliations. The description should be meaningful to an
 new intelligence analyst. Highlight typical applications. Highlight any dual use technologies that may be of concern to the United States
-Government.
+Government. 
 
-What is a good summary of the scientific topic related to {article_phrases} and {article_title}?
-Provide the summary in about 80 words. 
+What is a good summary of the scientific paper with  title {article_title} and abstract {article_abstract}?
+Take into account the list of authors {author_list} and list of affiliations {affiliation_list}. Highlight especially
+any collaborations between affiliations in different countries. 
+Provide the summary in about 300 words or less. 
 Please end with a complete sentence.
 """
 
 prompt_article = PromptTemplate(
-    input_variables=["article_phrases","article_title"],
+    input_variables=["article_title","article_abstract","author_list",
+                    "affiliation_list"],
     template=article_template,
 )
+
 
 chain_article = LLMChain(llm=llm, prompt=prompt_article)
 
 
-def get_article_llm_description(key_phrases:list, title:str):
+def get_article_llm_description(title:str, abstract:str, authors:list, affils:list):
     """
     takes in the key_phrases list, and the article title
     and returns the openai returned description.
     """
-    article_phrases = ", ".join(key_phrases)
-    return chain_article.run(article_phrases=article_phrases,article_title=title)
+    authors = "; ".join(authors)
+    affils = "; ".join(affils)
+    return chain_article.run(article_title=title,article_abstract=abstract,
+                           author_list=authors, affiliation_list=affils )
 
-
+############################################################################
 
 topic_template = """
 I want you to act as a naming consultant for scientific topics based on keyphrases.
+Act like a Systems Engineering and Technical Assistance (SETA) consultant. 
 
 Return a brief but detailed description of the scientific topic and applications related to
-the scientific field desribed by the list of keyphrase. The description should be meaningful to an
+the scientific field desribed by the list of keyphrases. The description should be meaningful to an
 new intelligence analyst. Highlight typical applications. Highlight any dual use technologies that may be of concern to the United States
 Government.
 
 What is a good summary of the scientific topic related to {topic_phrases}?
-Provide the summary in about 80 words. 
+Provide the summary in about 180 words. 
 Please end with a complete sentence.
 """
+
 
 prompt_topic = PromptTemplate(
     input_variables=["topic_phrases"],
@@ -503,8 +516,12 @@ try:
     ]
     selected_cluster = df_selected['cluster'].iloc[0]
     article_keywords = df_selected['keywords'].to_list()[0]
-    article_title = df_selected['title'].to_list()[0]
-    llm_article_description = get_article_llm_description(article_keywords, article_title)
+    article_title = df_selected['title'].iloc[0]
+    article_abstract = df_selected['abstract'].iloc[0]
+    article_authors = df_selected['author_list'].iloc[0]
+    article_affils = df_selected['affil_list'].iloc[0]
+    llm_article_description = get_article_llm_description(article_title, article_abstract,
+                article_authors,  article_affils)
     st.write(f"Selected Article")
     st.data_editor(
         df_selected[['x', 'y', 'id', 'title', 'doi', 'cluster', 
