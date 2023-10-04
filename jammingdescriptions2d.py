@@ -259,15 +259,15 @@ def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
                 g.add_edge(
                        row['paper_id'],
                        f,
-                       title=row['paper_title'] + ':\n ' +  str(row['paper_publication_date']) + \
-                       ' :\n' + str(f),
+                  #     title=row['paper_title'] + ':\n ' +  str(row['paper_publication_date']) + \
+                  #     ' :\n' + str(f),
                   #  weight = row['paper_cluster_score']
                    )
                 g.add_edge(
                        f,
                        row['paper_author_id'],
                     #   title=row['paper_author_display_name'] + ' :\n ' + \
-                       str(f),
+                  #     str(f),
                   #  weight = row['paper_cluster_score']
                        
                    )
@@ -275,7 +275,7 @@ def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
                        f,
                        row['id'],
                   #     title=row['display_name'] + '\n' + row['country_code'] + ' :\n ' + \
-                       str(f)  ,
+                   #    str(f)  ,
                   #  weight = row['paper_cluster_score']
                    )  
                 if row["source"]:
@@ -303,14 +303,14 @@ def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
             row['paper_author_id'],
             row['id'],
        #     title=row['paper_author_display_name'] + ' :\n ' + \
-            row['display_name'] + ' :\n ' + row['country_code'],
+       #     row['display_name'] + ' :\n ' + row['country_code'],
           #  weight = row['paper_cluster_score']
         )
         g.add_edge(
             row['paper_id'],
             row['id'],
         #    title=row['paper_title'] + ' :\n ' + str(row['paper_publication_date']) + ':\n' + 
-            row['display_name'] + ' :\n ' + row['country_code'],
+        #    row['display_name'] + ' :\n ' + row['country_code'],
          #   weight = row['paper_cluster_score']
         )
         
