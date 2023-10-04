@@ -231,9 +231,9 @@ def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
             g.add_edge(
                 row['paper_id'],
                 row['source'],
-                title=row['paper_title'] + ' :\n ' + str(row['paper_publication_date']) +  \
-                ' :\n' + row['source'] + ' :\n ' + \
-                row['source_type'],
+            #    title=row['paper_title'] + ' :\n ' + str(row['paper_publication_date']) +  \
+            #    ' :\n' + row['source'] + ' :\n ' + \
+            #    row['source_type'],
               #  weight = df[(df['paper_id'] == row['paper_id']) & \
               #              (df['source'] == row['source'])]['paper_cluster_score'].sum()
                # weight = row['paper_cluster_score']
@@ -241,7 +241,7 @@ def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
             g.add_edge(
                 row['paper_author_id'],
                 row['source'],
-                title=row['paper_author_display_name'] + ':\n' + row['source'],
+            #    title=row['paper_author_display_name'] + ':\n' + row['source'],
              #   weight = df[(df['paper_author_id'] == row['paper_author_id']) & \
               #              (df['source'] == row['source'])]['paper_cluster_score'].sum()
                # weight = row['paper_cluster_score']
@@ -249,7 +249,7 @@ def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
             g.add_edge(
                 row['id'],
                 row['source'],
-                title=row['display_name'] + ':\n' + row['source']
+             #   title=row['display_name'] + ':\n' + row['source']
             )
         if len(row['funder_list']) > 0:
             for f in row['funder_list']:
@@ -266,7 +266,7 @@ def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
                 g.add_edge(
                        f,
                        row['paper_author_id'],
-                       title=row['paper_author_display_name'] + ' :\n ' + \
+                    #   title=row['paper_author_display_name'] + ' :\n ' + \
                        str(f),
                   #  weight = row['paper_cluster_score']
                        
@@ -274,7 +274,7 @@ def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
                 g.add_edge(
                        f,
                        row['id'],
-                       title=row['display_name'] + '\n' + row['country_code'] + ' :\n ' + \
+                  #     title=row['display_name'] + '\n' + row['country_code'] + ' :\n ' + \
                        str(f)  ,
                   #  weight = row['paper_cluster_score']
                    )  
@@ -282,7 +282,7 @@ def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
                     g.add_edge(
                         f,
                         row["source"],
-                        title=row["source"] + ' :\n' + str(f),
+                   #     title=row["source"] + ' :\n' + str(f),
                      #   weight = row['paper_cluster_score']
                     )
         g.nodes[row['paper_id']]['title'] = (
@@ -295,21 +295,21 @@ def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
         g.add_edge(
             row['paper_id'],
             row['paper_author_id'],
-        title=row['paper_title'] + ' :\n ' + row['paper_author_display_name'] + ' :\n ' + \
-            row['paper_raw_affiliation_string'],
+      #  title=row['paper_title'] + ' :\n ' + row['paper_author_display_name'] + ' :\n ' + \
+      #      row['paper_raw_affiliation_string'],
          #   weight = row['paper_cluster_score']
         )
         g.add_edge(
             row['paper_author_id'],
             row['id'],
-            title=row['paper_author_display_name'] + ' :\n ' + \
+       #     title=row['paper_author_display_name'] + ' :\n ' + \
             row['display_name'] + ' :\n ' + row['country_code'],
           #  weight = row['paper_cluster_score']
         )
         g.add_edge(
             row['paper_id'],
             row['id'],
-            title=row['paper_title'] + ' :\n ' + str(row['paper_publication_date']) + ':\n' + 
+        #    title=row['paper_title'] + ' :\n ' + str(row['paper_publication_date']) + ':\n' + 
             row['display_name'] + ' :\n ' + row['country_code'],
          #   weight = row['paper_cluster_score']
         )
