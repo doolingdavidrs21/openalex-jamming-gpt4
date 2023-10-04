@@ -216,9 +216,14 @@ def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
         g.add_node(row['paper_id'], group='work', title=row['paper_title'])
         g.add_node(row['paper_author_id'], title=row['paper_author_display_name'],
                    group='author',value = author_counts_dict[row['paper_author_id']])
-        g.add_node(row['id'], group='affiliation',
+        try:
+            g.add_node(row['id'], group='affiliation',
                    title=row['display_name'] + '\n' + row['country_code'],
                   value = affiliation_counts_dict[row['id']])
+        except:
+            g.add_node(row['id'], group='affiliation',
+                   title=row['display_name'],
+                  value = affiliation_counts_dict[row['id']]) 
         if row['source']:
             g.add_node(row['source'], group=row['source_type'],
                       title=row['source'] + ' :\n ' + row['source_type'],
