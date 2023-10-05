@@ -542,10 +542,12 @@ try:
 #st.write(topic_keywords)
 except:
     #pass
-    selected_cluster = centroids[
+    selected_cluster_list = centroids[
         (centroids["x"] == selected_x_value)
         & (centroids["y"] == selected_y_value)
-    ]['cluster'].to_list()[0]
+    ]['cluster'].to_list()
+    if selected_cluster_list:
+        selected_cluster = selected_cluster_list[0]
 
 
 #def make_clickable(url, name):
