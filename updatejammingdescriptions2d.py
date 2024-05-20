@@ -21,10 +21,16 @@ from langchain.chat_models import ChatOpenAI
 from langchain import PromptTemplate
 from langchain.chains import LLMChain
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from itertools import combinations
+from pydeck.types import String
+
+# file://wsl.localhost/Ubuntu-22.04/home/davidd/2023/openalex-jamming-gpt4/updatechart.html
 
 
 
 os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+os.environ["MAPBOX_TOKEN"] = st.secrets["MAPBOX_TOKEN"]
+MAPBOX_TOKEN = st.secrets["MAPBOX_TOKEN"]
 #os.environ["OPENAI_API_KEY"] = st.secrets["DB_TOKEN"]
 
 # https://platform.openai.com/docs/models/gpt-3-5
@@ -200,6 +206,37 @@ source_dict = load_source_dict()
 affil_geo_dict = load_affil_geo_dict()
 
 kw_dict = dfinfo['keywords'].to_dict()
+
+
+color_education = [228,26,28]
+color_facility = [55, 126, 184]
+color_government = [77, 175, 74]
+color_other = [152, 78, 163]
+color_nonprofit = [255, 127, 0]
+color_company = [255, 255, 51]
+color_healthcare = [166, 86, 40]
+color_archive = [247, 129, 191]
+
+
+fill_color_dict = {
+    'education': color_education,
+    'facility': color_facility,
+    'government': color_government,
+    'company': color_company,
+    'nonprofit': color_nonprofit,
+    'other': color_other,
+    'healthcare': color_healthcare,
+    'archive': color_archive
+}
+
+dftriple['fill_color'] = dftriple['type'].map(fill_color_dict)
+
+
+dftriple['r'] = dftriple['fill_color'].apply(lambda x: x[0])
+dftriple['g'] = dftriple['fill_color'].apply(lambda x: x[1])
+dftriple['b'] = dftriple['fill_color'].apply(lambda x: x[2])
+
+
 
 # add in the affiliations as nodes as well; that row, author, paper, affil. all three get links. ok.
 def create_nx_graph(df: pd.DataFrame, cl:int) -> nx.Graph:
@@ -660,7 +697,7 @@ def get_affils_cluster_sort(dc:pd.DataFrame, cl:int):
     dg = dc[dc['paper_cluster'] == cl].copy()
     print(cl)
     dv = dg.groupby(['id','display_name','country_code',
-                     'type'])['paper_cluster_score'].sum().to_frame()
+                     'type','r','g','b'])['paper_cluster_score'].sum().to_frame()
     dv.sort_values('paper_cluster_score', ascending=False, inplace=True)
     dv.reset_index(inplace=True) # map the display_name column with the geo_dict to get lattitude, longitude
     dv['latitude'] = dv['display_name'].apply(lambda x: affil_geo_dict.get(x, (None, None))[0])
@@ -752,7 +789,8 @@ def get_time_series(dg, cl:int):
     #df_month = by_month.rename_axis('month').reset_index(name='counts')
     return dftime
 
-
+def generate_subsets(lst):
+    return sorted(list(combinations(lst, 2)))
 
 def get_pydeck_chart(dh:pd.DataFrame):
     """
@@ -937,6 +975,51 @@ with tab9:
         longitude = dg['longitude'].mean(),
         zoom = 3
     )
+    view = pdk.data_utils.compute_view(dg[["longitude", "latitude"]])
+    view.pitch = 75
+    view.bearing = 60
+    da = dftriple[dftriple['paper_cluster'] == selected_cluster].copy()
+    dv = da.groupby('paper_id')['display_name'].apply(lambda x: len(set(x.values))).to_frame()
+    dc = da.groupby('paper_id')['display_name'].apply(lambda x: list(set(x.values))).to_frame()
+    dc.columns = ['collab_affils']
+    dv.columns = ['affil_count']
+    dv['collab_affils'] = dc['collab_affils']
+    dv.sort_values('affil_count', ascending=False, inplace=True)
+    dv = dv[dv['affil_count'] > 1].copy()
+    dv['subsets'] = dv['collab_affils'].apply(generate_subsets)
+    flattened_df = dv.explode('subsets').copy()
+    flattened_df['source_affil'] = flattened_df['subsets'].apply(lambda x: x[0])
+    flattened_df['target_affil'] = flattened_df['subsets'].apply(lambda x: x[1])
+    dfarc = flattened_df['subsets'].value_counts(dropna=False).to_frame().copy()
+    dfarc.rename(columns={'subsets': 'count'}, inplace=True)
+    dfarc['affils'] = dfarc.index
+    dfarc['source'] = dfarc['affils'].apply(lambda x: x[0])
+    dfarc['target'] = dfarc['affils'].apply(lambda x: x[1])
+    dfarc['source_geo'] = dfarc['source'].map(affil_geo_dict)
+    dfarc['target_geo'] = dfarc['target'].map(affil_geo_dict)
+    pattern = r"(-?\d+\.\d+), (-?\d+\.\d+)"
+    dfarc[['source_lat', 'source_lon']] = dfarc['source_geo'].apply(str).str.extract(pattern)
+    dfarc[['target_lat', 'target_lon']] = dfarc['target_geo'].apply(str).str.extract(pattern)
+    dfarc['source_lon'] = dfarc['source_lon'].apply(float)
+    dfarc['source_lat'] = dfarc['source_lat'].apply(float)
+    dfarc['target_lon'] = dfarc['target_lon'].apply(float)
+    dfarc['target_lat'] = dfarc['target_lat'].apply(float)
+    GREEN_RGB = [0, 255, 0]
+    RED_RGB = [240, 100, 0]
+
+    arc_layer = pdk.Layer(
+        "ArcLayer",
+        data=dfarc.dropna(),
+        get_width = "count * 2",
+        get_source_position = ['source_lon', 'source_lat'],
+        get_target_position = ['target_lon','target_lat'],
+        get_tilt=0,
+        pickable=True,
+        get_source_color=RED_RGB,
+        get_target_color=GREEN_RGB,
+        auto_highlight = True
+    )
+    
     sp_layer = pdk.Layer(
         'ScatterplotLayer',
         data = dg,
@@ -952,11 +1035,48 @@ with tab9:
       #  get_fill_color = ['paper_cluster_score <= 1 ? 255 ? 
         get_fill_color = [65, 182, 196]
     )
+    affil_layer = pdk.Layer(
+        "ColumnLayer",
+        data = dg,
+        get_position=["longitude","latitude"],
+        get_elevation="size",
+        elevation_scale = 200,
+       # radius_scale = 75,
+       # radius_min_pixels=5,
+       # radius_max_pixels=300,
+        radius = 3_000,
+        line_width_min_pixels=1,
+        get_radius="size",
+   # radius = 20,
+       # get_fill_color=[180, 0, 200, 140],
+        get_fill_color=['r','g','b'],
+        auto_highlight=True,
+        pickable=True,
+    )
+    heatmap_layer = pdk.Layer(
+        "HeatmapLayer",
+        data=dg,
+        opacity=0.8,
+        get_position=['longitude','latitude'],
+        aggregation=String('MAX'),
+        get_weight='paper_cluster_score'
+    )
+    
     st.pydeck_chart(pdk.Deck(
-        map_style='dark',
-        initial_view_state = cl_initial_view,
-        layers = [sp_layer],
+        layers = [sp_layer, affil_layer, heatmap_layer, arc_layer],
+        api_keys = {'mapbox': MAPBOX_TOKEN},
+        map_provider='mapbox',
+       # map_style="mapbox:styles/mapbox/satellite-streets-v11",
+        map_style="mapbox://styles/mapbox/dark-v10",
+       #  map_style="mapbox://styles/mapbox/satellite-streets-v11",
+       # map_style='dark',
+        #tooltip=True,
+        initial_view_state=view,
+        #map_style='dark',
+        #initial_view_state = cl_initial_view,
+        #layers = [sp_layer],
         tooltip = {
-            "html": "<b>{display_name}</b> <br/> <b>Strength</b>: {paper_cluster_score}"
+            "html": "<b>{display_name}</b> <br/> <b>Strength</b>: {paper_cluster_score} <br>" + \
+            "<b>source: {source} <br/> <b>target</b> {target}"
         }
     ))
